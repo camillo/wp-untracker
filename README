@@ -1,0 +1,38 @@
+This is a Wordpress plugin, that resolves google feedproxy links.
+
+State
+For now, it is a prove of concept. It works during my tests, but I am not a
+blogger; I do not know if it is usefull at all and it is not tested very
+well.
+
+Motivation
+I do not want to see google feedproxy links inside posts. I do not want to get
+tracked by google and hate such things. Unfortunately some blogger use it
+(their choise), so linking to their posts requires work to 'free' the links.
+Stupid task (copy to browser, copy new url), that can get scripted very easy.
+
+Untracker tries to do this, by looking over new posts (by a regex), do a curl
+request for every found feedproxy link and replace the link with the 'correct'
+one (http header redirect_url).
+
+Install
+Copy wp-untracker.php to wp-content/plugins and activate it.
+You need to have installed curl support for php (on my ubuntu this was done per
+default settings; aptitude install apache2 wordpress php5-gd).
+
+Usage
+Simple write your posts. Pressing the 'publish' button will call wp-untracker
+and feedproxy links will get replaced.
+
+Note
+This is the first time I looked into wordpress and also the first time I wrote
+a single line of (usefull) php code. Possible that stupid beginner's mistakes
+exists. Please let me know if you see some.
+
+Future
+Possible that the project growths. I have some ideas for other filters and
+actions. If some people like the idea I will invest some time. Feel free to
+contact me, if you see usefull aspects or want to contribute.
+
+Licence
+wp-untracker's code is public domain.
