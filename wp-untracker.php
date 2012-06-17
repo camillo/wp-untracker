@@ -1,9 +1,12 @@
 <?php
 /* {
 Plugin Name: WordPress Untracker
-Description: Replace google tracking links from posts with 'normal' ones.
+Plugin URI: https://github.com/camillo/wp-untracker
+Description: Replace google feedproxy links from posts with 'normal' ones.
 Author: Daniel Marohn <daniel.marohn@googlemail.com>
-Version: 0.1 Alpha - prove of concept
+Author URI: https://github.com/camillo/
+Version: 0.1
+License: public domain
 } */
 
 /**
@@ -15,13 +18,13 @@ function freeUrl($url)
 {
 	try 
 	{
-		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_NOBODY, 1);
-		$c = curl_exec($ch);
-		$info = curl_getinfo($ch);
-		curl_close($ch);
+		$curlSession = curl_init($url);
+		curl_setopt($curlSession, CURLOPT_NOBODY, 1);
+		$curlResponse = curl_exec($curlSession);
+		$header = curl_getinfo($curlSession);
+		curl_close($curlSession);
 		
-		return $info['redirect_url'];		
+		return $header['redirect_url'];
 	} catch (Exception $ex)
 	{
 		return $url;

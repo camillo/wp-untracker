@@ -1,4 +1,5 @@
 This is a Wordpress plugin, that resolves google feedproxy links.
+Find updates at https://github.com/camillo/wp-untracker
 
 State
 For now, it is a prove of concept. It works during my tests, but I am not a
@@ -36,3 +37,4 @@ contact me, if you see usefull aspects or want to contribute.
 
 Licence
 wp-untracker's code is public domain.
+
