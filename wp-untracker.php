@@ -39,8 +39,8 @@ function untrackPost($content)
 	$ret = $content;
 	try 
 	{
-		preg_match_all('|http://feedproxy.google.com/[^\s"<]*|',$content, $feedLinkMatches);
-		foreach ($feedLinkMatches[0] as $feedLink)
+		preg_match_all('|href=\\\?"(http://feedproxy.google.com/[^"\\\]*)\\\?"|',$content, $feedLinkMatches);
+		foreach ($feedLinkMatches[1] as $feedLink)
 		{
 			$freedUrl = freeUrl($feedLink);
 			if (!empty($freedUrl))
