@@ -9,6 +9,29 @@ Version: 0.1
 License: public domain
 } */
 
+// take care for logging helper function _log
+if(!function_exists('_log'))
+{
+	/**
+	 * Write message to logfile, if debug is enabled.
+	 * @see http://fuelyourcoding.com/simple-debugging-with-wordpress/
+	 * @param any $message support for strings, arrays and custom objects
+	 */
+	function _log( $message )
+	{
+		if( WP_DEBUG === true )
+		{
+			if( is_array( $message ) || is_object( $message ) )
+			{
+				error_log( print_r( $message, true ) );
+			} else
+			{
+				error_log( $message );
+			}
+		}
+	}
+}
+
 /**
  * Do a GET request against given url and returns the redirect_url header, if exists.
  * @return redirect_url if exists, $url otherwise; leave $url unmodified if something went wrong.
@@ -27,6 +50,7 @@ function freeUrl($url)
 		return $header['redirect_url'];
 	} catch (Exception $ex)
 	{
+		_log("error freeing url $url: " . $ex->getMessage());
 		return $url;
 	}
 }
@@ -39,23 +63,27 @@ function freeUrl($url)
  */
 function untrackPost($content)
 {
-	$ret = $content;
 	try 
 	{
-		preg_match_all('|href=\\\"(http://feedproxy.google.com/[^"\\\]*)\\\"|',$content, $feedLinkMatches);
-		foreach ($feedLinkMatches[1] as $feedLink)
-		{
-			$freedUrl = freeUrl($feedLink);
-			if (!empty($freedUrl))
-			{
-				$ret = str_replace("href=\\\"" . $feedLink . "\\\"", "href=\\\"" . $freedUrl . "\\\"", $ret);	
-			}
-		}
-		return $ret;
+		return preg_replace_callback('~href=\\\"(http://feedproxy.google.com/[^"\\\]*)\\\"~',
+				/**
+				 * replace the feedproxy url from found link with the 'real' url.
+				 * @param regexMatch $match
+				 */
+				function($match)
+				{
+					$link = $match[0];
+					$originalUrl = $match[1];
+					$newUrl = freeUrl($originalUrl);
+					_log("replacing link [$link] -> [$newUrl]");
+					return str_replace($originalUrl, $newUrl, $link);
+				}, $content);
 	} catch (Exception $ex)
 	{
+		_log("error untracking post: " . $ex->getMessage());
 		return $content;
 	}
 }
 
+// register plugin
 add_filter('content_save_pre','untrackPost');
