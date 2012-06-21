@@ -17,7 +17,7 @@ request for every found feedproxy link and replace the link with the 'correct'
 one (http header redirect_url).
 
 Install
-Copy wp-untracker.php to wp-content/plugins and activate it.
+Copy feedproxyResolver.php.php to wp-content/plugins and activate it.
 You need to have installed curl support for php (on my ubuntu this was done per
 default settings; aptitude install apache2 wordpress php5-gd).
 
