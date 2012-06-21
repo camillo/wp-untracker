@@ -1,6 +1,6 @@
 <?php
 /* {
-Plugin Name: WordPress Untracker
+Plugin Name: Feedproxy Resolver
 Plugin URI: https://github.com/camillo/wp-untracker
 Description: Replace google feedproxy links from posts with 'normal' ones.
 Author: Daniel Marohn <daniel.marohn@googlemail.com>
