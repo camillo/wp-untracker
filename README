@@ -12,7 +12,7 @@ tracked by google and hate such things. Unfortunately some blogger use it
 (their choise), so linking to their posts requires work to 'free' the links.
 Stupid task (copy to browser, copy new url), that can get scripted very easy.
 
-Untracker tries to do this, by looking over new posts (by a regex), do a curl
+FeedproxyResolver tries to do this, by looking over new posts (by a regex), do a curl
 request for every found feedproxy link and replace the link with the 'correct'
 one (http header redirect_url).
 
@@ -22,7 +22,7 @@ You need to have installed curl support for php (on my ubuntu this was done per
 default settings; aptitude install apache2 wordpress php5-gd).
 
 Usage
-Simple write your posts. Pressing the 'publish' button will call wp-untracker
+Simple write your posts. Pressing the 'publish' button will call FeedproxyResolver
 and feedproxy links will get replaced.
 
 Note
@@ -36,5 +36,5 @@ actions. If some people like the idea I will invest some time. Feel free to
 contact me, if you see usefull aspects or want to contribute.
 
 Licence
-wp-untracker's code is public domain.
+feedproxyResolver code is public domain.
 
