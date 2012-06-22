@@ -1,11 +1,6 @@
 This is a Wordpress plugin, that resolves google feedproxy links.
 Find updates at https://github.com/camillo/wp-untracker
 
-State
-For now, it is a prove of concept. It works during my tests, but I am not a
-blogger; I do not know if it is usefull at all and it is not tested very
-well.
-
 Motivation
 I do not want to see google feedproxy links inside posts. I do not want to get
 tracked by google and hate such things. Unfortunately some blogger use it
