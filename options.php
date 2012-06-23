@@ -35,10 +35,24 @@ function validateWellKnownParameter($input)
 	return $ret;
 }
 
+/**
+ * make sure that value is empty or the string "on"
+ * @param string $input new value
+ * @return unmodified $input if empty or "on; empty string otherwise
+ */
 function validateParanoiaParameter($input)
 {
-	_log("vaidate paranoia [$input] ok");
-	return $input;
+	$ret = $input;
+	if ((empty($ret)) || ($ret == "on"))
+	{
+		_log("validate paranoia parameter [$input]: ok");
+	} else
+	{
+		_log("validate paranoia parameter [$input]: unknown value; turn paranoia off");
+		$ret = "";		
+	}
+
+	return $ret;
 }
 
 /**
