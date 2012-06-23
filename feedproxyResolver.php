@@ -60,6 +60,38 @@ function resolveUrl($url)
 }
 
 /**
+ * Check if newUrl is reachable (200 OK from server)
+ * @param string $newUrl the url to check
+ * @param string $originalUrl the url, without parameter replacing
+ * @return $newUrl, if valid; $originalUrl otherwise
+ */
+function checkUrl($newUrl, $originalUrl)
+{
+	$ret = $newUrl;
+	try
+	{
+		$curlSession = curl_init($newUrl);
+		curl_setopt($curlSession, CURLOPT_NOBODY, 1);
+		$curlResponse = curl_exec($curlSession);
+		$header = curl_getinfo($curlSession);
+		curl_close($curlSession);
+		$httpStatus = $header['http_code'];
+		if($httpStatus == "200")
+		{
+			_log("url ok: [$newUrl]");
+		} else{
+			_log("[$httpStatus] url failed: [$newUrl]");
+			$ret = $originalUrl;
+		}
+	} catch (Exception $ex)
+	{
+		_log("error, checking url: " . $ex->getMessage());
+		$ret = $originalUrl;
+	}
+	return $ret;
+}
+
+/**
  * Removes a single known tracking parameters from given GET parameters.
  * @param string $parameter the parameter's part of an url.
  * @param string $wellKnownParameter a single parameter name to remove from $parameter
@@ -197,20 +229,30 @@ function doHardcore($url)
  */
 function freeUrl($url)
 {
-	$ret = resolveUrl($url);
+	$resolvedUrl = resolveUrl($url);
+	$ret = $resolvedUrl;
 	try
 	{
 		$replacementMode = get_option('replacementMode');
-		if ($replacementMode == "softcore")
+		$paranoia = get_option('paranoia');
+		if ($replacementMode != "full")
 		{
-			$ret = doSoftcore($ret);
-		} else if ($replacementMode == "hardcore")
-		{
-			$ret = doHardcore($ret);
+			if ($replacementMode == "softcore")
+			{
+				$ret = doSoftcore($ret);
+			} else if ($replacementMode == "hardcore")
+			{
+				$ret = doHardcore($ret);
+			}
+			if ($paranoia == "on")
+			{
+				$ret = checkUrl($ret, $resolvedUrl);
+			}
 		}
 	} catch (Exception $ex)
 	{
 		_log("error in cutter: " . $ex->getMessage());
+		$ret = $resolvedUrl;
 	}
 	
 	return $ret;
