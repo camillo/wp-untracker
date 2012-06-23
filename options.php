@@ -54,7 +54,7 @@ function registerFeedproxySettings()
  */
 function initFeedproxySettings()
 {
-	add_menu_page('FeedproxyResolver Settings', 'Feedp Resolver', 'administrator', __FILE__, 'feedproxyOptionDrawPage');
+	add_submenu_page( 'options-general.php', 'Feedp Resolver', 'Feedp Resolver', 'administrator' , __FILE__, 'feedproxyOptionDrawPage');
 	add_action('admin_init', 'registerFeedproxySettings');
 }
 
@@ -93,8 +93,8 @@ function feedproxyOptionDrawPage() {
 		<h4>No replacement</h4>
 			This is the savest option. The url will be used, exacly as received, containing all GET parameters.
 		<h4>softcore</h4>
-			Some known GET parameters will be removed from url, rest of them are not touched. Leave parameter textboxt empty to use default settings (utm_medium, utm_source and utm_campaign). 
-		<h4>hardcore (naming creds goes to Max)</h4>
+			Some known GET parameters will be removed from url, rest of them are not touched. Leave parameter textbox empty to use default settings (utm_medium, utm_source and utm_campaign). 
+		<h4>hardcore (naming creds goes to daMax)</h4>
 			All GET parameters are removed from url.
 		<h4>paranoia</h4>
 			Activating this option, let Feedproxy Resolver check the url after parameter cutting. If no 200 OK is returned from server, The original url with all parameters will be used.  

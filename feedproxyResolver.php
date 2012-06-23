@@ -37,6 +37,23 @@ if(!function_exists('_log'))
 include_once dirname( __FILE__ ) . '/options.php';
 
 /**
+ * Do a GET request against given url (with nobody opion enabled).
+ * @param string $url
+ * @return dict with response headern
+ * @throws everything, that curls throws. No exception is catched here.
+ */
+function doCurlRequest($url)
+{
+	$curlSession = curl_init($url);
+	curl_setopt($curlSession, CURLOPT_NOBODY, 1);
+	$curlResponse = curl_exec($curlSession);
+	$header = curl_getinfo($curlSession);
+	curl_close($curlSession);
+	
+	return $header;
+}
+
+/**
  * Do a GET request against given url and returns the redirect_url header, if exists.
  * @return redirect_url if exists, $url otherwise; leave $url unmodified if something went wrong.
  * @param string $url
@@ -45,12 +62,7 @@ function resolveUrl($url)
 {
 	try 
 	{
-		$curlSession = curl_init($url);
-		curl_setopt($curlSession, CURLOPT_NOBODY, 1);
-		$curlResponse = curl_exec($curlSession);
-		$header = curl_getinfo($curlSession);
-		curl_close($curlSession);
-		
+		$header = doCurlRequest($url);
 		return $header['redirect_url'];
 	} catch (Exception $ex)
 	{
@@ -70,11 +82,7 @@ function checkUrl($newUrl, $originalUrl)
 	$ret = $newUrl;
 	try
 	{
-		$curlSession = curl_init($newUrl);
-		curl_setopt($curlSession, CURLOPT_NOBODY, 1);
-		$curlResponse = curl_exec($curlSession);
-		$header = curl_getinfo($curlSession);
-		curl_close($curlSession);
+		$header = doCurlRequest($newUrl);
 		$httpStatus = $header['http_code'];
 		if($httpStatus == "200")
 		{
