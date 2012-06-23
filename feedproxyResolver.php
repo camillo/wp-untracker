@@ -36,7 +36,7 @@ if(!function_exists('_log'))
 include_once dirname( __FILE__ ) . '/options.php';
 
 /**
- * Do a GET request against given url (with nobody opion enabled).
+ * Do a GET request against given url (with nobody option enabled).
  * @param string $url
  * @return dict with response headern
  * @throws everything, that curls throws. No exception is catched here.
@@ -99,7 +99,7 @@ function checkUrl($newUrl, $originalUrl)
 }
 
 /**
- * Removes a single known tracking parameters from given GET parameters.
+ * Removes a single known tracking parameter from given GET parameters.
  * @param string $parameter the parameter's part of an url.
  * @param string $wellKnownParameter a single parameter name to remove from $parameter
  * @return given $parameter without $wellKnownParameter
@@ -207,8 +207,7 @@ function doHardcore($url)
 {
 	try 
 	{
-		$ret = $url;
-		$parts = explode("?", $ret);
+		$parts = explode("?", $url);
 		$ret = $parts[0];
 		_log("do hardcore: [$url] -> [$ret]");
 		return $ret;
