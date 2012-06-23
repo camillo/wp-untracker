@@ -8,7 +8,6 @@ Author URI: https://github.com/camillo/
 Version: 0.1
 License: public domain
 } */
-//require_once ('./options.php');
 
 // take care for logging helper function _log
 if(!function_exists('_log'))
@@ -109,7 +108,7 @@ function removeWellKnownParameter($parameter, $wellKnownParameter)
 {
 	try
 	{
-		$pattern ="~&?" . $wellKnownParameter ."=[^&/]+~";
+		$pattern ="~&?" . $wellKnownParameter ."=[^&/]*~";
 		$ret = preg_replace($pattern, "", $parameter);
 		return $ret;
 	} catch (Exception $ex)
@@ -209,7 +208,7 @@ function doHardcore($url)
 	try 
 	{
 		$ret = $url;
-		$parts = split("[?]", $ret);
+		$parts = explode("?", $ret);
 		$ret = $parts[0];
 		_log("do hardcore: [$url] -> [$ret]");
 		return $ret;
@@ -243,14 +242,17 @@ function freeUrl($url)
 	{
 		$replacementMode = get_option('replacementMode');
 		$paranoia = get_option('paranoia');
-		if ($replacementMode != "full")
+		if ((!empty($replacementMode)) && ($replacementMode != "full"))
 		{
 			if ($replacementMode == "softcore")
 			{
 				$ret = doSoftcore($ret);
-			} else if ($replacementMode == "hardcore")
+			} elseif ($replacementMode == "hardcore")
 			{
 				$ret = doHardcore($ret);
+			} else 
+			{
+				throw new Exception("unknown replacement mode: [$replacementMode]");
 			}
 			if ($paranoia == "on")
 			{

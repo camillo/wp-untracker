@@ -12,7 +12,7 @@ function validateReplaceMode($input)
 	{
 		$ret = $input;
 	}
-	_log("validate [$input] -> [$ret]");
+	_log("validate replace mode [$input]: [$ret]");
 	return $ret;
 }
 
@@ -27,13 +27,17 @@ function validateWellKnownParameter($input)
 	if (empty($input))
 	{
 		$ret = "utm_medium utm_source utm_campaign";
+		_log("validate sofcore parameter [$input]: use default parameter");
+	} else 
+	{
+		_log("validate sofcore parameter [$input]: ok");
 	}
 	return $ret;
 }
 
 function validateParanoiaParameter($input)
 {
-	_log("vaidate paranoia: [$input]");
+	_log("vaidate paranoia [$input] ok");
 	return $input;
 }
 
