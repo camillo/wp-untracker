@@ -246,7 +246,8 @@ function untrackPost($content)
 	}
 }
 
-// register plugin
+// register hook, to get called every time, just before the content of a post is saved.
+// This is, where Feedproxy Resolver does his work. 
 add_filter('content_save_pre','untrackPost');
 
 ?>

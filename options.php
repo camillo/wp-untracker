@@ -47,7 +47,7 @@ function registerFeedproxySettings()
  */
 function initFeedproxySettings()
 {
-	add_menu_page('FeedproxyResolver Settings', 'FeedproxyResolver', 'administrator', __FILE__, 'feedproxyOptionDrawPage');
+	add_menu_page('FeedproxyResolver Settings', 'Feedp Resolver', 'administrator', __FILE__, 'feedproxyOptionDrawPage');
 	add_action('admin_init', 'registerFeedproxySettings');
 }
 
@@ -57,7 +57,7 @@ function initFeedproxySettings()
 function feedproxyOptionDrawPage() {
 ?>
     <div class="wrap">
-        <h2>FeedProxy Options</h2>
+        <h2>Feedproxy Resolver Options</h2>
         <form method="post" action="options.php">
             <?php settings_fields('feedproxyResolver'); ?>
             <?php $replacementMode = get_option('replacementMode'); ?>
@@ -89,6 +89,7 @@ function feedproxyOptionDrawPage() {
     <?php
 }
 
+// register our admin page to wordpress
 add_action('admin_menu', 'initFeedproxySettings');
 
 ?>
