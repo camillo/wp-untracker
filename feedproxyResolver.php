@@ -5,7 +5,7 @@ Plugin URI: https://github.com/camillo/wp-untracker
 Description: Replace google feedproxy links from posts with 'normal' ones.
 Author: Daniel Marohn <daniel.marohn@googlemail.com>
 Author URI: https://github.com/camillo/
-Version: 0.1
+Version: 0.2
 License: public domain
 } */
 
@@ -219,23 +219,20 @@ function doHardcore($url)
 }
 
 /**
- * Remove google feedproxy link from given $url.
- * 1. get new url
- * 2. short url in case of hardcore or softcore modus.
+ * remove GET parameter, if configured
+ * short url in case of hardcore or softcore modus.
+ *   check url in case of paranoia
  * 
  * softcore:
  * cut knwon parameters from target url
  * 
  * hardcore:
- * remove all GET parameters from url
- * 
- * @param string $url the url to free
- * @return 'real' url		
-
+ * cut all GET parameter
+ * @param string $resolvedUrl allready resolved feedproxy url
+ * @return string url with cutted parameter
  */
-function freeUrl($url)
+function handleGetParameter($resolvedUrl)
 {
-	$resolvedUrl = resolveUrl($url);
 	$ret = $resolvedUrl;
 	try
 	{
@@ -249,7 +246,7 @@ function freeUrl($url)
 			} elseif ($replacementMode == "hardcore")
 			{
 				$ret = doHardcore($ret);
-			} else 
+			} else
 			{
 				throw new Exception("unknown replacement mode: [$replacementMode]");
 			}
@@ -263,8 +260,27 @@ function freeUrl($url)
 		_log("error in cutter: " . $ex->getMessage());
 		$ret = $resolvedUrl;
 	}
-	
-	return $ret;
+	return $ret;	
+}
+
+/**
+ * Remove google feedproxy link from given $url.
+ * 1. get new url
+ * 2. remove configured get parameter
+ * 
+ * @param string $url the url to free
+ * @return 'real' url		
+
+ */
+function freeUrl($url)
+{
+	$resolvedUrl = resolveUrl($url);
+	if ($resolvedUrl == $url)
+	{
+		_log("was not able to resolve url [$url]; keep feedproxy url!");
+		return $url;
+	}
+	return handleGetParameter($resolvedUrl);
 }
 
 /**
@@ -281,6 +297,7 @@ function untrackPost($content)
 				/**
 				 * replace the feedproxy url from found link with the 'real' url.
 				 * @param regexMatch $match
+				 * @return string resolved and ready to use link
 				 */
 				function($match)
 				{

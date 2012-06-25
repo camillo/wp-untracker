@@ -79,7 +79,8 @@ function initFeedproxySettings()
 /**
  * Draw the menu page itself
  */
-function feedproxyOptionDrawPage() {
+function feedproxyOptionDrawPage()
+{
 ?>
     <div class="wrap">
         <h2>Feedproxy Resolver Options</h2>
