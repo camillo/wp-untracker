@@ -99,6 +99,22 @@ function checkUrl($newUrl, $originalUrl)
 }
 
 /**
+ * Generate a regex pattern, that match given parameter and value
+ * @param string $parameter name of the parameter to match
+ * @return string ready to use regex pattern for parameter
+ */
+function getParameterPattern($parameter, $includeSeparator)
+{
+	$ret = "~";
+	if ($includeSeparator)
+	{
+		$ret = $ret . "&?";
+	}
+	$ret = $ret . $parameter ."=[^&/]*~";
+	return $ret;
+}
+
+/**
  * Removes a single known tracking parameter from given GET parameters.
  * @param string $parameter the parameter's part of an url.
  * @param string $wellKnownParameter a single parameter name to remove from $parameter
@@ -108,7 +124,7 @@ function removeWellKnownParameter($parameter, $wellKnownParameter)
 {
 	try
 	{
-		$pattern ="~&?" . $wellKnownParameter ."=[^&/]*~";
+		$pattern = getParameterPattern($wellKnownParameter, true);
 		$ret = preg_replace($pattern, "", $parameter);
 		return $ret;
 	} catch (Exception $ex)
@@ -121,12 +137,13 @@ function removeWellKnownParameter($parameter, $wellKnownParameter)
 /**
  * Removes all known tracking parameters from given GET parameters.
  * @param string $parameter the parameter's part of an url.
- * @param string $wellKnownParameter space separated list of parameters to remove from $parameter
+ * @param string $wellKnownParameter space separated list of parameters to remove from $parameter; empty for default
  * @return string given parameters without known tracking ones.
  */
 function removeWellKnownParameters($parameter, $wellKnownParameter)
 {
 	$ret = $parameter;
+	if (empty($wellKnownParameter)) $wellKnownParameter = "utm_medium utm_source utm_campaign";
 	try 
 	{
 		foreach (explode(" ", $wellKnownParameter) as $currentParameter)
@@ -144,6 +161,7 @@ function removeWellKnownParameters($parameter, $wellKnownParameter)
 
 /**
  * Removes single ? in case that all parameter got removed.
+ * Removes leading & (?&utm_medium=foo for example)
  * @param string $parameter parameter part from an url
  * @return $parameter if there are any; empty string otherwise
  */
@@ -158,6 +176,9 @@ function cleanupParameters($parameter)
 		}elseif ($parameter == "?/")
 		{
 			$ret = "/";
+		} elseif (substr($parameter, 0, 2) == "?&")
+		{
+			$ret = "?" . substr($parameter, 2);
 		}
 		return $ret;
 	} catch (Exception $ex)
@@ -168,54 +189,82 @@ function cleanupParameters($parameter)
 }
 
 /**
- * Cut knwon parameters from target url.
- * @param string $url target url
- * @return url, without any known feedproxy parameters
+ * Add the well known parameter to newParameter, if exists in parameter
+ * @param string $parameter parameter part from url
+ * @param string $wellknownParameter name of a single well known parameter
+ * @param string $newParameter new parameter list build so far.
+ * @return string $newParameter plus new parameter
  */
-function doSoftcore($url)
+function addWellknownParameter($parameter, $wellknownParameter, $newParameter)
 {
-	try 
+	$ret = $newParameter;
+	$pattern = getParameterPattern($wellknownParameter, false);
+	switch (preg_match($pattern, $parameter, $matches))
 	{
-		$ret = $url;
-		$parameterStart = strpos($ret, "?");
-		if ($parameterStart === false)
-		{
-			_log("no GET parameter; nothing to do.");
-		} else
-		{
-			$parameter = substr($ret, $parameterStart);
-			$wellKnownParameter = get_option('wellKnownParameter');
-			$newParameter = removeWellKnownParameters($parameter, $wellKnownParameter);
-			$newParameter = cleanupParameters($newParameter);
-			$ret = substr($ret, 0, $parameterStart) . $newParameter;
-		}
-		_log("do softcore: [$url] -> [$ret]");
-		return $ret;
-	} catch (Exception $ex)
-	{
-		_log("error in softcore: " . $ex->getMessage());
-		return $url;
+		case 0:
+			// parameter not set in url; nothing to do 
+			break;
+		case 1:
+			$parameterAndValue = $matches[0];
+			// if this is the first parameter, the & is wrong (?&foo=bar)
+			// this will be handled by cleanupParameters
+			$ret = $ret . "&" . $parameterAndValue;
+			break;
+		default:
+			throw new Exception("parameter $wellknownParameter is found more than once.");
 	}
+	return $ret;	
 }
 
 /**
- * Remove all GET parameters from url.
- * @param string $url target url
- * @return Url, without any GET parameters.
+ * Remove all GET parameters from url except well known ones.
+ * @param string $parameter GET parameters
+ * @param string $wellKnownParameter list of exceptions
+ * @return Url, without any GET parameters but the whitelisted ones
  */
-function doHardcore($url)
+function removeAllButWellKnownParameters($parameter, $wellKnownParameter)
 {
+	$ret = "?";
 	try 
 	{
-		$parts = explode("?", $url);
-		$ret = $parts[0];
-		_log("do hardcore: [$url] -> [$ret]");
-		return $ret;
+		foreach (explode(" ", $wellKnownParameter) as $currentParameter)
+		{
+			$ret = addWellknownParameter($parameter, $currentParameter, $ret);
+		}
 	} catch (Exception $ex)
 	{
 		_log("error in hardcore: " . $ex->getMessage());
-		return $url;
+		$ret = $parameter;
 	}
+	return $ret;
+}
+/**
+ * Remove GET parameters by configured setting replacementMode.
+ * @param string $replacementMode "softcore" or "hardcore"
+ * @param string $parameter the GET parameter
+ * @param string $wellKnownParameter list of known exceptions
+ * @throws Exception in case of invalid $replacementMode
+ */
+function replaceGetParameter($parameter)
+{
+	$replacementMode = get_option('replacementMode');
+	$wellKnownParameter = get_option('wellKnownParameter');
+	$newParameter = "";
+	if ($replacementMode == "softcore")
+	{
+		$newParameter = removeWellKnownParameters($parameter, $wellKnownParameter);
+	} elseif ($replacementMode == "hardcore")
+	{
+		$newParameter = removeAllButWellKnownParameters($parameter, $wellKnownParameter);
+	} elseif ($replacementMode == "full" || empty($replacementMode))
+	{
+		return $parameter;
+	} else
+	{
+		throw new Exception("unknown replacement mode: [$replacementMode]");
+	}
+	$newParameter = cleanupParameters($newParameter);
+	return $newParameter;
 }
 
 /**
@@ -236,21 +285,17 @@ function handleGetParameter($resolvedUrl)
 	$ret = $resolvedUrl;
 	try
 	{
-		$replacementMode = get_option('replacementMode');
-		$paranoia = get_option('paranoia');
-		if ((!empty($replacementMode)) && ($replacementMode != "full"))
+		$parameterStart = strpos($ret, "?");
+		if ($parameterStart === false)
 		{
-			if ($replacementMode == "softcore")
-			{
-				$ret = doSoftcore($ret);
-			} elseif ($replacementMode == "hardcore")
-			{
-				$ret = doHardcore($ret);
-			} else
-			{
-				throw new Exception("unknown replacement mode: [$replacementMode]");
-			}
-			if ($paranoia == "on")
+			_log("no GET parameter; nothing to do.");
+		} else
+		{
+			$parameter = substr($ret, $parameterStart);
+			$newParameter = replaceGetParameter($parameter);
+			$ret = substr($ret, 0, $parameterStart) . $newParameter;
+
+			if (get_option('paranoia') == "on")
 			{
 				$ret = checkUrl($ret, $resolvedUrl);
 			}

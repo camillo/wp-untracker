@@ -17,22 +17,14 @@ function validateReplaceMode($input)
 }
 
 /**
- * Set parameter to default value, if no one is set.
+ * do nothing but log
  * @param string $input new value
- * @return default parameter if $input is empty; $input otherwise
+ * @return string $input
  */
 function validateWellKnownParameter($input)
 {
-	$ret = $input;
-	if (empty($input))
-	{
-		$ret = "utm_medium utm_source utm_campaign";
-		_log("validate sofcore parameter [$input]: use default parameter");
-	} else 
-	{
-		_log("validate sofcore parameter [$input]: ok");
-	}
-	return $ret;
+	_log("validate well known parameter [$input]: ok");
+	return $input;
 }
 
 /**
@@ -95,7 +87,7 @@ function feedproxyOptionDrawPage()
 				<input type="radio" name="replacementMode" value="softcore" <?php checked(  $replacementMode == "softcore" ); ?>> softcore<br>
 				<input type="radio" name="replacementMode" value="hardcore" <?php checked(  $replacementMode == "hardcore" ); ?>> hardcore
 			</p>
-			<p>Space separated parameter list for softcore (leave empty for default)</p>
+			<p>Blacklist for softcore (leave empty for default)<br>Whitelist for hardcore</p>
 			<p>
 				<input type="text" name ="wellKnownParameter" style="width:500px" value="<?php echo $wellKnownParameter;?>" />
 			</p>
@@ -114,7 +106,7 @@ function feedproxyOptionDrawPage()
 		<h4>softcore</h4>
 			Some known GET parameters will be removed from url, rest of them are not touched. Leave parameter textbox empty to use default settings (utm_medium, utm_source and utm_campaign). 
 		<h4>hardcore (naming creds goes to daMax)</h4>
-			All GET parameters are removed from url.
+			All GET parameters are removed from url, except the whitelisted ones from the parameter textbox.
 		<h4>paranoia</h4>
 			Activating this option, let Feedproxy Resolver check the url after parameter cutting. If no 200 OK is returned from server, The original url with all parameters will be used.  
 	</div>
