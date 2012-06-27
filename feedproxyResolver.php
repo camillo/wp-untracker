@@ -38,7 +38,7 @@ include_once dirname( __FILE__ ) . '/options.php';
 /**
  * Do a GET request against given url (with nobody option enabled).
  * @param string $url
- * @return dict with response headern
+ * @return dict with curl response, containing all headers
  * @throws everything, that curls throws. No exception is catched here.
  */
 function doCurlRequest($url)
@@ -46,10 +46,10 @@ function doCurlRequest($url)
 	$curlSession = curl_init($url);
 	curl_setopt($curlSession, CURLOPT_NOBODY, 1);
 	$curlResponse = curl_exec($curlSession);
-	$header = curl_getinfo($curlSession);
+	$ret = curl_getinfo($curlSession);
 	curl_close($curlSession);
 	
-	return $header;
+	return $ret;
 }
 
 /**
@@ -62,7 +62,14 @@ function resolveUrl($url)
 	try 
 	{
 		$header = doCurlRequest($url);
-		return $header['redirect_url'];
+		if (array_key_exists('redirect_url', $header) && !empty($header['redirect_url']))
+		{
+			return $header['redirect_url'];
+		} else 
+		{
+			_log($header);
+			throw new Exception("result from server does not contain redirect_url header");
+		}
 	} catch (Exception $ex)
 	{
 		_log("error freeing url $url: " . $ex->getMessage());
@@ -224,6 +231,7 @@ function addWellknownParameter($parameter, $wellknownParameter, $newParameter)
  */
 function removeAllButWellKnownParameters($parameter, $wellKnownParameter)
 {
+	// if no parameter is added, the single ? will be removed by cleanupParameters
 	$ret = "?";
 	try 
 	{
@@ -239,13 +247,15 @@ function removeAllButWellKnownParameters($parameter, $wellKnownParameter)
 	return $ret;
 }
 /**
- * Remove GET parameters by configured setting replacementMode.
- * @param string $replacementMode "softcore" or "hardcore"
- * @param string $parameter the GET parameter
- * @param string $wellKnownParameter list of known exceptions
+ * remove GET parameter, if configured
+ *
+ * full:     remove no parameter(default)
+ * softcore: cut knwon parameters from target url
+ * hardcore: cut all but known parameters from target url
+ * @param string $parameter the GET parameter part of an url
  * @throws Exception in case of invalid $replacementMode
  */
-function replaceGetParameter($parameter)
+function removeGetParameters($parameter)
 {
 	$replacementMode = get_option('replacementMode');
 	$wellKnownParameter = get_option('wellKnownParameter');
@@ -258,6 +268,7 @@ function replaceGetParameter($parameter)
 		$newParameter = removeAllButWellKnownParameters($parameter, $wellKnownParameter);
 	} elseif ($replacementMode == "full" || empty($replacementMode))
 	{
+		// skip cleanupParameters
 		return $parameter;
 	} else
 	{
@@ -268,17 +279,9 @@ function replaceGetParameter($parameter)
 }
 
 /**
- * remove GET parameter, if configured
- * short url in case of hardcore or softcore modus.
- *   check url in case of paranoia
- * 
- * softcore:
- * cut knwon parameters from target url
- * 
- * hardcore:
- * cut all GET parameter
+ * Get new parameter if needed and replace them with old ones
  * @param string $resolvedUrl allready resolved feedproxy url
- * @return string url with cutted parameter
+ * @return string url with new parameter
  */
 function handleGetParameter($resolvedUrl)
 {
@@ -292,7 +295,7 @@ function handleGetParameter($resolvedUrl)
 		} else
 		{
 			$parameter = substr($ret, $parameterStart);
-			$newParameter = replaceGetParameter($parameter);
+			$newParameter = removeGetParameters($parameter);
 			$ret = substr($ret, 0, $parameterStart) . $newParameter;
 
 			if (get_option('paranoia') == "on")
@@ -302,45 +305,51 @@ function handleGetParameter($resolvedUrl)
 		}
 	} catch (Exception $ex)
 	{
-		_log("error in cutter: " . $ex->getMessage());
+		_log("error in handleGetParameter: " . $ex->getMessage());
 		$ret = $resolvedUrl;
 	}
 	return $ret;	
 }
 
 /**
- * Remove google feedproxy link from given $url.
+ * Resolves given feedproxy url to the 'real' one.
  * 1. get new url
  * 2. remove configured get parameter
  * 
  * @param string $url the url to free
- * @return 'real' url		
-
+ * @return string 'real' url		
  */
-function freeUrl($url)
+function resolveFeedproxyUrl($url)
 {
-	$resolvedUrl = resolveUrl($url);
-	if ($resolvedUrl == $url)
+	$ret = resolveUrl($url);
+	if ($ret == $url)
 	{
 		_log("was not able to resolve url [$url]; keep feedproxy url!");
-		return $url;
+		$ret = $url;
+	} else
+	{
+		$ret = handleGetParameter($ret); 
 	}
-	return handleGetParameter($resolvedUrl);
+	return $ret;
 }
 
 /**
  * Called by WP before a post is saved.
  * Resolve and replace google feedproxy links.
- * @return $content with replaced feedproxy links, if possible; or unmodified $content if something went wrong. 
- * @param string $content
+ * @param string $content post's content as it would be written into database
+ * @return $content with replaced feedproxy links; unmodified $content if something went wrong. 
  */
-function untrackPost($content)
+function resolveFeedproxyUrls($content)
 {
 	try 
 	{
-		return preg_replace_callback('~href=\\\"(http://feedproxy.google.com/[^"\\\]*)\\\"~',
+		// The pattern match against full href parameter of google's feedproxy links.
+		// It does not match against feedproxy links in clear text.
+		// The url itself is captured in first (and only) capture group.
+		// Note: The \\\ are double escaped (for php and for regex pattern).
+		return preg_replace_callback('~href=\\\"(http://feedproxy.google.com/[^\\\]+)\\\"~',
 				/**
-				 * replace the feedproxy url from found link with the 'real' url.
+				 * replace the feedproxy url from found link with the resolved url.
 				 * @param regexMatch $match
 				 * @return string resolved and ready to use link
 				 */
@@ -348,7 +357,7 @@ function untrackPost($content)
 				{
 					$link = $match[0];
 					$originalUrl = $match[1];
-					$newUrl = freeUrl($originalUrl);
+					$newUrl = resolveFeedproxyUrl($originalUrl);
 					_log("replacing link [$link] -> [$newUrl]");
 					return str_replace($originalUrl, $newUrl, $link);
 				}, $content);
@@ -359,8 +368,8 @@ function untrackPost($content)
 	}
 }
 
-// register hook, to get called every time, just before the content of a post is saved.
+// Register hook, to get called every time, just before the content of a post is saved.
 // This is, where Feedproxy Resolver does his work. 
-add_filter('content_save_pre','untrackPost');
+add_filter('content_save_pre','resolveFeedproxyUrls');
 
 ?>
